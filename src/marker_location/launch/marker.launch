@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="ep_bringup" type="ep_bringup.py" name="ep_bringup_node" cwd="node"/>
+    <node pkg="marker_location" type="img_processor.py" name="img_process_node" output="screen" cwd="node"/>
+
+</launch>

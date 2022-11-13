@@ -1,0 +1,59 @@
+conn_type: 'sta'
+rate: 200
+
+wifi:
+  ssid: 'czx_P30'
+  password: '76543210'
+
+camera:
+  frame_id: 'ep_camera'
+  img_topic_name: '/ep/camera/color/image_raw'
+  info_topic_name: '/ep/camera/color/camera_info'
+  resolution: '360p'
+  display: False
+  # info 标定生成
+  info:
+    D: [-0.0738882155841218, -0.005760327982189524, -0.00086482682466968, 0.003638315585765878, 0.0]
+    K: [309.2180664557364, 0.0, 316.9312826802545, 0.0, 308.864233481454, 175.9144577935138, 0.0, 0.0, 1.0]
+    R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+    P: [274.54193115234375, 0.0, 321.5302651052116, 0.0, 0.0, 299.58294677734375, 174.8726911968988, 0.0, 0.0, 0.0, 1.0, 0.0]
+
+marker:
+  topic_name: '/marker_poses'
+
+chassis:
+  frame_id: 'ep_chassis'
+  cmd_topic_name: '/ep/chassis/cmd_vel'
+  timeout: 5
+
+  x_target: -0.008
+  z_target: 0.25
+  yaw_target: 0.05
+  x_tolerance: 0.005
+  z_tolerance: 0.02
+  yaw_tolerance: 0.05
+
+servo:
+  cmd_topic_name: 'ep/servo/cmd_pos'
+  angle_topic_name: 'ep/servo/angles'
+
+arm:
+  frame_id: 'ep_arm'
+  end_topic_name: 'ep/arm/end_pos'
+  gripper_topic_name: 'ep/arm/gripper'
+  # ______________ l2
+  # | agl2
+  # |
+  # | l1
+  # |
+  # | agl1
+  # in this pose, the base agl1, agl2 in rad
+  agl1_base: 3.316  # 190 degree
+  agl2_base: 4.887  # 280 degree
+  # the arm length in m
+  l1: 0.12
+  l2: 0.1225
+  # the pose y, z offset
+  y_offset: -0.07
+  z_offset: 0.07
+  
