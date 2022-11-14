@@ -2,8 +2,8 @@ conn_type: 'sta'
 rate: 200
 
 wifi:
-  ssid: 'czx_P30'
-  password: '76543210'
+  ssid: '128B'
+  password: '128Bskwdzx'
 
 camera:
   frame_id: 'ep_camera'
@@ -26,12 +26,18 @@ chassis:
   cmd_topic_name: '/ep/chassis/cmd_vel'
   timeout: 5
 
+  # x - leftward; y - upward; z - forward
   x_target: -0.008
   z_target: 0.25
   yaw_target: 0.05
+  # The tolerance of error
   x_tolerance: 0.005
   z_tolerance: 0.02
   yaw_tolerance: 0.05
+  # gain of the P control 
+  x_gain: 4
+  z_gain: 1
+  yaw_gain: 1
 
 servo:
   cmd_topic_name: 'ep/servo/cmd_pos'
@@ -41,15 +47,24 @@ arm:
   frame_id: 'ep_arm'
   end_topic_name: 'ep/arm/end_pos'
   gripper_topic_name: 'ep/arm/gripper'
+  # base pose:
+  #  / camera forward
+  # /
   # ______________ l2
   # | agl2
   # |
   # | l1
   # |
   # | agl1
+
+  # the agl1 & agl2 in the servo.angle_topic_name msg's index
+  agl1_idx: 2
+  agl2_idx: 0
   # in this pose, the base agl1, agl2 in rad
-  agl1_base: 3.316  # 190 degree
-  agl2_base: 4.887  # 280 degree
+  agl1_base: 3.386
+  agl2_base: 3.435
+  # the angle between the front view of the camera and the arm2
+  agl_camera_arm2: 0.399
   # the arm length in m
   l1: 0.12
   l2: 0.1225

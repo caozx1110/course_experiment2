@@ -21,6 +21,7 @@ from robomaster import conn, robot
 from MyQR import myqr
 import cv2
 import rospy
+import time
 
 
 # 连接方式为STA组网模式
@@ -36,6 +37,8 @@ class EPRobot(object):
             self.connect_wifi()
             self.ep_robot.initialize(conn_type="sta")
         
+        rospy.loginfo("EP Robot connected!")
+        
         # sensors & actuator
         self.camera = EPCamera(self.ep_robot)
         self.chassis = EPChassis(self.ep_robot)
@@ -43,7 +46,8 @@ class EPRobot(object):
         self.servo = EPServo(self.ep_robot)
         
         self.SN = self.ep_robot.get_sn()
-        print("Robot SN:", self.SN)
+        rospy.loginfo("Robot SN: " + self.SN)
+        # print("Robot SN:", self.SN)
         
         # start the camera thread
         self.camera.pub_img()
@@ -71,6 +75,7 @@ class EPRobot(object):
         """
         self.camera.pub_info()
         self.servo.pub_angles()
+        self.camera.pub_tf()
             
     def close(self):
         """close the robot
@@ -80,7 +85,7 @@ class EPRobot(object):
 if __name__ == '__main__':
     rospy.init_node('ep_bringup')
     rate = rospy.Rate(config.rate)
-    
+
     ep = EPRobot()
     
     while not rospy.is_shutdown():

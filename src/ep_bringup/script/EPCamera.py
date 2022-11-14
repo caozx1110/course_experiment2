@@ -54,8 +54,9 @@ class EPCamera(object):
         param: msg Float32MultiArray: the msg of the servo angle
         """
         # NOTE: servo2 is shoulder servo, servo1 is elbow servo
-        agl1 = config.arm.agl1_base - msg.data[1]
-        agl2 = msg.data[0] - config.arm.agl2_base - agl1    # NOTE：几何关系 舵机角度不等于肘关节角度
+        # NOTE: the index is different in each EP
+        agl1 = config.arm.agl1_base - msg.data[config.arm.agl1_idx]
+        agl2 = msg.data[config.arm.agl2_idx] - config.arm.agl2_base - agl1    # NOTE：几何关系 舵机角度不等于肘关节角度
         
         # msg
         self.tf_msg.header.stamp = rospy.Time.now()
@@ -68,7 +69,9 @@ class EPCamera(object):
         self.tf_msg.transform.translation.z = config.arm.l1 * math.sin(agl1)
         
         # rospy.logerr("agl1: %f, agl2: %f", agl1, agl2)
-        rot_x = agl1 + agl2 - math.pi / 12  # TODO: add to config & measure the real value
+        
+        # agl_camera_arm2: the angle between the front view of the camera and the arm2
+        rot_x = agl1 + agl2 - config.arm.agl_camera_arm2 # TODO: measure the real value
         # the frame of the camera is different from the frame of the arm , roate 180 degree around z axis
         q = tf_conversions.transformations.quaternion_from_euler(rot_x, 0, math.pi, 'rxyz')     # 绕自身转轴旋转
         self.tf_msg.transform.rotation.x = q[0]
@@ -77,8 +80,8 @@ class EPCamera(object):
         self.tf_msg.transform.rotation.w = q[3]
         
         # pub tf
-        print(self.tf_msg)
-        self.tf_broadcaster.sendTransform(self.tf_msg)
+        # print(self.tf_msg)
+        
     
     def pub_img_task(self):
         """publish the camera image
@@ -120,6 +123,7 @@ class EPCamera(object):
     def pub_tf(self):
         """publish the camera tf
         """
+        self.tf_broadcaster.sendTransform(self.tf_msg)
         pass
     
     def pub_img(self):

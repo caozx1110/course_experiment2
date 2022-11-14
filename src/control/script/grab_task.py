@@ -48,13 +48,13 @@ class grabTask:
                 rospy.logwarn("Waiting for topic")
                 continue
             break
-        
+
         # ros communication
-        
+
         self.end_publisher = rospy.Publisher(config.arm.end_topic_name, Point, queue_size=10)
         self.gripper_publisher = rospy.Publisher(config.arm.gripper_topic_name, Int8, queue_size=10)
         self.chassis_publisher = rospy.Publisher(config.chassis.cmd_topic_name, Twist, queue_size=10)
-        
+
         # init
         self.tgt_id = 0
         self.tgt_pose = Pose()
@@ -62,7 +62,7 @@ class grabTask:
         self.is_tgt = False
         self.is_done = False
         self.times_count = 0
-        
+
         self.marker_subscriber = rospy.Subscriber(config.marker.topic_name, markers, self.marker_callback, queue_size=10)
         self.servo_angle_subscriber = rospy.Subscriber(config.servo.angle_topic_name, Float32MultiArray, self.servo_angle_callback, queue_size=10)
 
@@ -80,8 +80,9 @@ class grabTask:
                 continue
             break
         
+        # TODO: 注释掉这一行，不对机械臂进行位置初始化，不上电，否则无法自由移动机械臂
         self.init_arm()
-        
+
     def chassis_setvel(self, vx: float=0, vy: float=0, vw: float=0):
         """set the chassis velocity
 
@@ -94,7 +95,7 @@ class grabTask:
         msg.linear.y = vy
         msg.angular.z = vw
         self.chassis_publisher.publish(msg)
-        
+
     def arm_moveto(self, x: float, y: float):
         """move the arm to the target position
 
@@ -106,7 +107,7 @@ class grabTask:
         self.tgt_end_msg.z = 0.0
         print("move to: x: {:.3f}, y: {:.3f}".format(x, y))
         self.end_publisher.publish(self.tgt_end_msg)
-        
+
     def gripper_open(self, power: int=50):
         """open the gripper
 
@@ -115,7 +116,7 @@ class grabTask:
         msg = Int8()
         msg.data = -power
         self.gripper_publisher.publish(msg)
-    
+
     def gripper_close(self, power: int=50):
         """close the gripper
 
@@ -124,7 +125,7 @@ class grabTask:
         msg = Int8()
         msg.data = power
         self.gripper_publisher.publish(msg)
-        
+
     def servo_angle_callback(self, msg: Float32MultiArray):
         """callback function of the servo angle subscriber
         
@@ -132,7 +133,7 @@ class grabTask:
         """
         # 相机所在关节角度
         angle = msg.data[0]
-        
+
     def marker_callback(self, msg: markers):
         """callback function of the marker subscriber
         
@@ -140,13 +141,13 @@ class grabTask:
         """
         idx_list = msg.ids.data
         pose_list = msg.poses
-        
+
         # 找最上面的marker
         # self.tgt_idx = -1 means the target has been grabed
         if len(idx_list) > 0:
             idx = idx_list.index(idx_list[-1])
             self.tgt_id = idx_list[idx]
-            
+
             pose_stamp = PoseStamped()
             pose_stamp.header = msg.header
             pose_stamp.pose = pose_list[idx]
@@ -159,51 +160,76 @@ class grabTask:
                     self.is_tgt = True
             except Exception as e:
                 rospy.logerr(e)
-            
-    
+
+
     def update(self):
+        """x 左右, z 前后, y 上下
+        """
         def _delta(current, target, tol=0.01):
+            """计算有容忍度的误差
+
+            :param any current: 当前值
+            :param any target: 目标值
+            :param float tol: 可容忍的误差, defaults to 0.01
+            :return any: 误差
+            """
             if abs(current - target) > tol:
                 return current - target
             else:
                 return 0
-            
+
         def _restrict_angle(angle):
+            """限制角度在 -pi ~ pi 之间
+
+            :param any angle: 角度
+            :return any: 限制后的角度
+            """
             if angle > np.pi:
                 angle -= 2 * np.pi
             elif angle < -np.pi:
                 angle += 2 * np.pi
             return angle
-            
+
         if self.is_tgt and (not self.is_done):
             # TODO: strategy can be changed here
+            # 计算误差
             delta_x = -_delta(self.tgt_pose.position.x, config.chassis.x_target, config.chassis.x_tolerance)
             delta_z = _delta(self.tgt_pose.position.z, config.chassis.z_target, config.chassis.z_tolerance)
-            r, p, y = tf_conversions.transformations.euler_from_quaternion([self.tgt_pose.orientation.x, 
-                                                                self.tgt_pose.orientation.y, 
-                                                                self.tgt_pose.orientation.z, 
+            # 四元数转欧拉角，计算yaw误差
+            r, p, y = tf_conversions.transformations.euler_from_quaternion([self.tgt_pose.orientation.x,
+                                                                self.tgt_pose.orientation.y,
+                                                                self.tgt_pose.orientation.z,
                                                                 self.tgt_pose.orientation.w])
             # 由于相机坐标系方向和机械臂坐标系方向不同
             delta_w = _restrict_angle(_delta(p, config.chassis.yaw_target, config.chassis.yaw_tolerance))
 
-            rospy.loginfo_once("x: {:.3f}, y: {:.3f}, z: {:.3f}, r: {:.3f}, p: {:.3f}, y: {:.3f}, delta_x: {:.4f}, delta_z: {:.4f}, delta_w: {:.4f}".format(self.tgt_pose.position.x, 
-                                                                                            self.tgt_pose.position.y, 
-                                                                                            self.tgt_pose.position.z, 
-                                                                                            r, p, y,
-                                                                                            delta_x, delta_z, delta_w))
+            # TODO: 取消注释
+            # 输出目标 marker 相对于机械臂坐标系的位置、姿态 x, y, z, roll, pitch, yaw
+            # rospy.loginfo(
+            #     "x: {:.3f}, y: {:.3f}, z: {:.3f}, r: {:.3f}, p: {:.3f}, y: {:.3f}, delta_x: {:.4f}, delta_z: {:.4f}, delta_w: {:.4f}".format(
+            #         self.tgt_pose.position.x, self.tgt_pose.position.y, self.tgt_pose.position.z, 
+            #         r, p, y, delta_x, delta_z, delta_w))
             
+            # TODO: 取消注释，不对机器人进行控制
+            # return
+            
+            # x, z, yaw 底盘控制
             if delta_x != 0 or delta_w != 0:
                 delta_x = np.clip(delta_x, -0.1, 0.1)
                 # delta_z = np.clip(delta_z, -0.1, 0.1)
                 delta_w = np.clip(delta_w, -0.1, 0.1)
-                self.chassis_setvel(vx=delta_z, vy=delta_x * 4, vw=delta_w) # TODO: add the gain to config
-                pass
+                self.chassis_setvel(vx=delta_z * config.chassis.z_gain, 
+                                    vy=delta_x * config.chassis.x_gain, 
+                                    vw=delta_w * config.chassis.yaw_gain)
+                
             elif delta_x != 0 or delta_z != 0 or delta_w != 0:
                 delta_x = np.clip(delta_x, -0.1, 0.1)
                 delta_z = np.clip(delta_z, -0.1, 0.1)
                 delta_w = np.clip(delta_w, -0.1, 0.1)
-                self.chassis_setvel(vx=delta_z, vy=delta_x * 4, vw=delta_w) # TODO: add the gain to config
-                pass
+                self.chassis_setvel(vx=delta_z * config.chassis.z_gain, 
+                                    vy=delta_x * config.chassis.x_gain, 
+                                    vw=delta_w * config.chassis.yaw_gain)
+            # y,z 机械臂控制
             else:
                 # return
                 self.chassis_setvel(0, 0, 0)
@@ -216,7 +242,7 @@ class grabTask:
                 # grab the target
                 self.gripper_close()
                 time.sleep(1)
-                self.chassis_setvel(-0.1, 0, 0)
+                self.arm_moveto(0.1, 0.1)
                 time.sleep(1)
                 self.chassis_setvel(0, 0, 0)
                 self.gripper_open()
@@ -226,7 +252,7 @@ class grabTask:
             rospy.loginfo_once("marker not found")
         else:
             rospy.loginfo_once("target grabed")
-            
+
     def init_arm(self):
         """init the arm end point position
         """
@@ -235,7 +261,7 @@ class grabTask:
         time.sleep(2)
         self.arm_moveto(0.18, -0.08)
         time.sleep(1)
-        
+
 
 if __name__ == '__main__':
     rospy.init_node('grab_task')
