@@ -2,8 +2,8 @@ conn_type: 'sta'
 rate: 200
 
 wifi:
-  ssid: '128B'
-  password: '128Bskwdzx'
+  ssid: ''
+  password: ''
 
 camera:
   frame_id: 'ep_camera'
@@ -27,17 +27,17 @@ chassis:
   timeout: 5
 
   # x - leftward; y - upward; z - forward
-  x_target: -0.008
-  z_target: 0.25
-  yaw_target: 0.05
+  x_target: 0
+  z_target: 0
+  yaw_target: 0
   # The tolerance of error
-  x_tolerance: 0.005
-  z_tolerance: 0.02
-  yaw_tolerance: 0.05
+  x_tolerance: 0
+  z_tolerance: 0
+  yaw_tolerance: 0
   # gain of the P control 
-  x_gain: 4
-  z_gain: 1
-  yaw_gain: 1
+  x_gain: 0
+  z_gain: 0
+  yaw_gain: 0
 
 servo:
   cmd_topic_name: 'ep/servo/cmd_pos'
