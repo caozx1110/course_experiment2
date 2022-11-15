@@ -1,6 +1,9 @@
-# course_ws
+# 实验三：EP 视觉伺服矿石抓取 manual
 the THU course Intelligent-Systems-2022Fall workspace as TA
 
+## 实验手册
+
+see [手册](./doc/实验三：EP 视觉伺服矿石抓取 manual_20221115101220.pdf)
 
 ## config
 
